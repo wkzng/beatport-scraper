@@ -1,0 +1,48 @@
+service: aws-python-project
+
+frameworkVersion: '3'
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: python3.9
+  profile: techwills
+  stage: ${opt:stage, 'dev'}
+  region: ${env:AWS_REGION, 'us-east-1'}
+  environment:
+    env: ${self:provider.stage}
+
+package:
+  patterns:
+    - '!venv/**'
+    - '!venv_prod/**'
+    - '!.env*'
+    - '!.gitignore'
+    - '!.dockerignore'
+    - '!Makefile'
+    - '!logs'
+    - '!data'
+    - '!explorations'
+    - '!node_modules'
+    - '!archives'
+
+custom:
+  prune:
+    automatic: true
+    includeLayers: true
+    number: 3
+  serverlessIfElse:
+    #- If: '"${self:provider.stage}" == "dev"'
+    #  Exclude:
+    #    - functions.hello
+
+plugins:
+  - serverless-python-requirements
+  #- serverless-plugin-ifelse
+  - serverless-prune-plugin
+  - serverless-dotenv-plugin
+
+
+functions:
+  beatport:
+    handler: handler.main
