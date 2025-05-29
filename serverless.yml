@@ -5,12 +5,18 @@ useDotenv: true
 
 provider:
   name: aws
-  runtime: python3.9
+  runtime: python3.11
   profile: techwills
   stage: ${opt:stage, 'dev'}
   region: ${env:AWS_REGION, 'us-east-1'}
+  ecr:
+    images:
+      tools_beatport:
+        path: ./
+        platform: linux/amd64
   environment:
     env: ${self:provider.stage}
+
 
 package:
   patterns:
@@ -30,14 +36,16 @@ custom:
   prune:
     automatic: true
     includeLayers: true
-    number: 3
+    number: 2
   serverlessIfElse:
     #- If: '"${self:provider.stage}" == "dev"'
     #  Exclude:
     #    - functions.hello
+  pythonRequirements:
+    usePipenv: true
 
 plugins:
-  - serverless-python-requirements
+  #- serverless-python-requirements
   #- serverless-plugin-ifelse
   - serverless-prune-plugin
   - serverless-dotenv-plugin
@@ -45,4 +53,11 @@ plugins:
 
 functions:
   beatport:
-    handler: handler.main
+    timeout: 120
+    memorySize: 1024
+    ephemeralStorageSize: 512
+    #handler: src/handler.main
+    image:
+      name: tools_beatport
+      command:
+        - src/handler.main
