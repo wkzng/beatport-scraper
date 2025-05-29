@@ -3,3 +3,6 @@ remote:
 
 local:
 	sls invoke local --stage dev --function beatport
+
+test:
+	python -m src.invoke
