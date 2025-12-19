@@ -28,7 +28,6 @@ def is_valid_beatport_url(url:str) -> bool:
             bool: True if the URL is a valid Beatport URL, False otherwise.
     """
     # Define the pattern for a valid Beatport URL
-    #pattern = r"^https?://(?:www\.)?beatport\.com/(?:track|release|artist)/[a-zA-Z0-9_-]+$"
     pattern = r"^https?://(?:www\.)?beatport\.com/(?:track|release|artist)/[a-zA-Z0-9-_/]+/\d+$"
     # Use regular expression to match the URL
     return bool(re.match(pattern, url))
@@ -98,7 +97,16 @@ def extract_audio_metadata(url: str) -> dict:
 
 
 def main(event:dict, context:dict):
-    url = event.get("url")
+    if 'body' in event:
+        body = json.loads(event['body']) if isinstance(event['body'], str) else event['body']
+    else:
+        body = event 
+    
+    print(body)
+    url = body.get("url")
+    print("URL", url)
+
+
     if not url:
         return {
             "status":ExecutionStatus.MISSING_URL, 
@@ -127,7 +135,7 @@ if __name__ == '__main__':
     #url = "https://www.beatport.com/track/it-goes-like-nanana/17839150"
     #url = "AD"
 
-    event = {"url":url}
+    event = {"body": {"url":url}}
     r = main(event, context=None)
     pprint(r)
 
