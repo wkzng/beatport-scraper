@@ -1,82 +1,212 @@
-<!--
-title: 'AWS Python Example'
-description: 'This template demonstrates how to deploy a Python function running on AWS Lambda using the traditional Serverless Framework.'
-layout: Doc
-framework: v3
-platform: AWS
-language: python
-priority: 2
-authorLink: 'https://github.com/serverless'
-authorName: 'Serverless, inc.'
-authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
--->
+# Beatport Metadata Extractor
 
+<p align="center">
+  <img src=illustrations/splash.png alt="" width="80%"/>
+</p>
 
-# Serverless Framework AWS Python Example
+## Overview
 
-This template demonstrates how to deploy a Python function running on AWS Lambda using the traditional Serverless Framework. The deployed function does not include any event definitions as well as any kind of persistence (database). For more advanced configurations check out the [examples repo](https://github.com/serverless/examples/) which includes integrations with SQS, DynamoDB or examples of functions that are triggered in `cron`-like manner. For details about configuration of specific `events`, please refer to our [documentation](https://www.serverless.com/framework/docs/providers/aws/events/).
+This AWS Lambda function extracts metadata from Beatport track URLs, including preview audio URLs, cover artwork, and track information. It's designed to be deployed as a serverless function using the Serverless Framework with Docker containerization.
 
-## Usage
+## Features
 
-### Deployment
+- **Track Metadata Extraction**: Retrieves comprehensive track information from Beatport URLs
+- **Audio Preview URLs**: Extracts lofi/preview audio file URLs
+- **Cover Artwork**: Fetches high-quality cover image URLs (500x500)
+- **Serverless Architecture**: Runs on AWS Lambda with optimized performance
+- **Docker-based Deployment**: Uses container images for consistent execution environment
 
-In order to deploy the example, you need to run the following command:
+## Example Usage
 
+**Input:**
 ```
-$ serverless deploy
+https://www.beatport.com/track/junin-shane-robinson-remix/7226500
 ```
 
-After running deploy, you should see output similar to:
+**Output:**
+```python
+{
+    'data': {
+        'audio_url': 'https://geo-samples.beatport.com/track/09f9bd4d-10cd-4dbe-a084-8e91564c40d1.LOFI.mp3',
+        'image_url': 'https://geo-media.beatport.com/image_size/500x500/d6e0659f-7da9-4ebc-99dd-8f7e05a16214.jpg',
+        'platform': 'beatport',
+        'title': 'Jelly For The Babies - Junin (Shane Robinson Remix) [PHW Elements] | Music & Downloads on Beatport',
+        'url': 'https://www.beatport.com/track/junin-shane-robinson-remix/7226500'
+    }
+}
+```
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) (v14 or higher) and npm
+- [Python 3.11](https://www.python.org/downloads/)
+- [Docker](https://www.docker.com/get-started)
+- [Serverless Framework](https://www.serverless.com/)
+- AWS Account with appropriate credentials configured
+- AWS CLI configured with your credentials
+
+## Getting Started
+
+### 1. Clone the Repository
 
 ```bash
-Deploying aws-python-project to stage dev (us-east-1)
-
-✔ Service deployed to stack aws-python-project-dev (112s)
-
-functions:
-  hello: aws-python-project-dev-hello (1.5 kB)
+git clone <your-repo-url>
+cd <repo-name>
 ```
+
+### 2. Install Dependencies
+
+Install Node.js dependencies (Serverless plugins):
+```bash
+npm install
+```
+
+Install Python dependencies:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file in the project root:
+```bash
+# Optional: Override default AWS region
+AWS_REGION=us-east-1
+```
+
+### 4. Local Testing
+
+Test the function locally without deploying:
+```bash
+make local
+```
+
+Or run the handler directly:
+```bash
+make test
+```
+
+## Deployment
+
+### Deploy to AWS
+
+Deploy to the development stage:
+```bash
+serverless deploy --stage dev
+```
+
+Deploy to production:
+```bash
+serverless deploy --stage prod
+```
+
+The deployment process will:
+1. Build a Docker image from the Dockerfile
+2. Push the image to AWS ECR
+3. Create/update the Lambda function with the container image
+4. Configure the function with 1024MB memory and 120s timeout
 
 ### Invocation
 
 After successful deployment, you can invoke the deployed function by using the following command:
 
 ```bash
-serverless invoke --function hello
+serverless invoke --stage dev --function beatport --path tests/events/beatport.json
 ```
 
-Which should result in response similar to the following:
+Or using the Makefile shortcut:
+```bash
+make remote
+```
+
+Which should result in a response similar to:
 
 ```json
 {
-    "statusCode": 200,
-    "body": "{\"message\": \"Go Serverless v3.0! Your function executed successfully!\", \"input\": {}}"
+    "data": {
+        "audio_url": "https://geo-samples.beatport.com/track/09f9bd4d-10cd-4dbe-a084-8e91564c40d1.LOFI.mp3",
+        "image_url": "https://geo-media.beatport.com/image_size/500x500/d6e0659f-7da9-4ebc-99dd-8f7e05a16214.jpg",
+        "platform": "beatport",
+        "title": "Jelly For The Babies - Junin (Shane Robinson Remix) [PHW Elements] | Music & Downloads on Beatport",
+        "url": "https://www.beatport.com/track/junin-shane-robinson-remix/7226500"
+    }
 }
 ```
 
-### Local development
+### Local Development
 
 You can invoke your function locally by using the following command:
 
 ```bash
-serverless invoke local --function hello
+serverless invoke local --stage dev --function beatport --path tests/events/beatport.json
 ```
 
-Which should result in response similar to the following:
-
-```
-{
-    "statusCode": 200,
-    "body": "{\"message\": \"Go Serverless v3.0! Your function executed successfully!\", \"input\": {}}"
-}
-```
-
-### Bundling dependencies
-
-In case you would like to include third-party dependencies, you will need to use a plugin called `serverless-python-requirements`. You can set it up by running the following command:
-
+Or using the Makefile:
 ```bash
-serverless plugin install -n serverless-python-requirements
+make local
 ```
 
-Running the above will automatically add `serverless-python-requirements` to `plugins` section in your `serverless.yml` file and add it as a `devDependency` to `package.json` file. The `package.json` file will be automatically created if it doesn't exist beforehand. Now you will be able to add your dependencies to `requirements.txt` file (`Pipfile` and `pyproject.toml` is also supported but requires additional configuration) and they will be automatically injected to Lambda package during build process. For more details about the plugin's configuration, please refer to [official documentation](https://github.com/UnitedIncome/serverless-python-requirements).
+## Project Structure
+
+```
+.
+├── Dockerfile              # Container configuration for Lambda
+├── Makefile               # Common commands for testing and deployment
+├── README.md              # This file
+├── package.json           # Node.js dependencies (Serverless plugins)
+├── requirements.txt       # Python dependencies
+├── serverless.yml         # Serverless Framework configuration
+├── src/                   # Source code
+│   └── handler.py         # Lambda handler function
+└── tests/                 # Test files
+    └── events/
+        └── beatport.json  # Sample event for testing
+```
+
+## Configuration
+
+### Lambda Function Settings
+
+The function is configured with the following settings (defined in `serverless.yml`):
+
+- **Runtime**: Python 3.11 (via Docker container)
+- **Timeout**: 120 seconds
+- **Memory**: 1024 MB
+- **Ephemeral Storage**: 512 MB
+- **Platform**: linux/amd64
+
+### Serverless Plugins
+
+- `serverless-prune-plugin`: Automatically removes old Lambda versions (keeps last 2)
+- `serverless-dotenv-plugin`: Loads environment variables from .env files
+
+## Troubleshooting
+
+### Docker Issues
+
+If you encounter Docker-related errors during deployment:
+```bash
+# Ensure Docker is running
+docker ps
+
+# Build image locally to test
+docker build -t beatport-test .
+```
+
+### AWS Credentials
+
+Ensure your AWS credentials are properly configured:
+```bash
+aws configure list
+```
+
+### Lambda Timeout
+
+If tracks are timing out, increase the timeout in `serverless.yml`:
+```yaml
+functions:
+  beatport:
+    timeout: 180  # Increase from 120 to 180 seconds
+```
