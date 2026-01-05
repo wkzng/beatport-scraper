@@ -8,7 +8,10 @@ debug:
 	python -m src.handler
 
 test_lambda:
-	python -m tests.invoke_lambda
+	python -m tests.test_invoke_lambda
 
 test_api:
-	python -m tests.invoke_api
+	python -m tests.test_invoke_api
+
+test_mcp:
+	python -m tests.test_mcp

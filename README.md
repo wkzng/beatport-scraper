@@ -148,21 +148,173 @@ Or using the Makefile:
 make local
 ```
 
-## Project Structure
+## API Endpoints
 
+The Lambda function is exposed via HTTP API Gateway with both GET and POST support:
+
+### POST Request
+```bash
+curl -X POST https://your-api-url/beatport \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.beatport.com/track/junin-shane-robinson-remix/7226500"}'
+```
+
+### GET Request
+```bash
+curl "https://your-api-url/beatport?url=https://www.beatport.com/track/junin-shane-robinson-remix/7226500"
+```
+
+### Testing API Locally
+```bash
+# Set up environment variables in .env
+API_URL=https://your-api-url/beatport
+TEST_URL=https://www.beatport.com/track/junin-shane-robinson-remix/7226500
+
+# Run the API test script
+python tests/invoke_api.py
+```
+
+## MCP Server (Claude Desktop Integration)
+
+The Beatport scraper can be used as an MCP (Model Context Protocol) server, allowing Claude Desktop to extract metadata from Beatport tracks directly in conversations.
+
+### What is MCP?
+
+MCP (Model Context Protocol) allows Claude Desktop to interact with external tools and services. This integration exposes the Beatport scraper as a tool that Claude can automatically use when you ask about Beatport tracks.
+
+### Quick Start
+
+1. **Install MCP dependencies:**
+   ```bash
+   pip install -r mcp_requirements.txt
+   ```
+
+2. **Configure Claude Desktop:**
+
+   **Step 1:** Locate your Claude Desktop config file:
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+   - **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+   If the file doesn't exist, create it with `{}` as the initial content.
+
+   **Step 2:** Add the MCP server configuration:
+
+   **For macOS/Linux:**
+   ```json
+   {
+     "mcpServers": {
+       "beatport-scraper": {
+         "command": "/absolute/path/to/beatport-scraper/venv/bin/python3",
+         "args": [
+           "/absolute/path/to/beatport-scraper/src/mcp/server.py"
+         ]
+       }
+     }
+   }
+   ```
+
+   **For Windows with WSL:**
+   ```json
+   {
+     "mcpServers": {
+       "beatport-scraper": {
+         "command": "wsl",
+         "args": [
+           "-e",
+           "/home/username/path/to/beatport-scraper/venv/bin/python3",
+           "/home/username/path/to/beatport-scraper/src/mcp/server.py"
+         ]
+       }
+     }
+   }
+   ```
+
+   **Important Notes:**
+   - Replace `/absolute/path/to/beatport-scraper` with your actual project path
+   - For WSL, use Linux paths (e.g., `/home/username/...`)
+   - Paths must be absolute, not relative
+
+3. **Test the configuration (optional):**
+
+   Before restarting Claude Desktop, test that the MCP server works:
+
+   **On macOS/Linux:**
+   ```bash
+   /path/to/beatport-scraper/venv/bin/python3 /path/to/beatport-scraper/src/mcp/server.py
+   ```
+
+   **On Windows with WSL:**
+   ```powershell
+   wsl -e /home/username/path/to/beatport-scraper/venv/bin/python3 /home/username/path/to/beatport-scraper/src/mcp/server.py
+   ```
+
+   The server should start and show a FastMCP banner. Press `Ctrl+C` to stop it.
+
+4. **Restart Claude Desktop:**
+
+   - **Fully quit** Claude Desktop (don't just close the window)
+   - On Windows: Right-click the system tray icon and select "Quit" or use Task Manager
+   - On macOS: Right-click the dock icon and select "Quit"
+   - Wait a few seconds, then relaunch Claude Desktop
+
+5. **Use it in Claude Desktop:**
+
+   Once configured, simply ask Claude about Beatport tracks:
+   - "Get metadata for this Beatport track: https://www.beatport.com/track/junin-shane-robinson-remix/7226500"
+   - "Extract the audio preview URL from https://www.beatport.com/track/never-get-enough/15766697"
+
+   Claude will automatically use the MCP server to extract track information including title, preview audio URL, and cover image.
+
+### Testing the MCP Server
+
+Test the MCP server independently before configuring Claude Desktop:
+
+```bash
+# Run the test suite
+python tests/test_mcp.py
+
+# Or test the MCP stdio protocol directly
+python tests/test_mcp_stdio.py
+
+# Or run the server directly (press Ctrl+C to stop)
+python src/mcp/server.py
+```
+
+### Troubleshooting
+
+**Claude Desktop doesn't see the MCP server:**
+- Ensure you fully quit and restarted Claude Desktop (not just closed the window)
+- Check that paths in the config are absolute and correct
+- On Windows, verify WSL is working: `wsl echo "test"`
+- Test the command manually before adding to Claude Desktop config
+
+**Server fails to start:**
+- Verify dependencies are installed: `pip install -r requirements_mcp.txt`
+- Check Python path is correct: `which python3` (in WSL/Linux) or `where python` (Windows)
+- Ensure the virtual environment is activated when testing
+
+
+## Project Structure
 ```
 .
-├── Dockerfile              # Container configuration for Lambda
+├── Dockerfile             # Container configuration for Lambda
 ├── Makefile               # Common commands for testing and deployment
 ├── README.md              # This file
 ├── package.json           # Node.js dependencies (Serverless plugins)
-├── requirements.txt       # Python dependencies
+├── requirements_prod.txt  # Python dependencies
+├── requirements_mcp.txt   # MCP server dependencies
 ├── serverless.yml         # Serverless Framework configuration
 ├── src/                   # Source code
-│   └── handler.py         # Lambda handler function
+│   ├── handler.py         # Lambda handler function
+│   └── mcp/               # MCP server implementations
+│       └── server.py      # FastMCP server
 └── tests/                 # Test files
-    └── events/
-        └── beatport.json  # Sample event for testing
+    ├── events/
+    │   └── beatport.json       # Sample event for testing
+    ├── test_invoke_lambda.py   # Lambda invocation script
+    ├── test_invoke_api.py      # API HTTP request script
+    └── test_mcp_stdio.py       # MCP server test suite
 ```
 
 ## Configuration

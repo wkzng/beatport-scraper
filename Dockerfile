@@ -5,7 +5,7 @@ COPY requirements.txt ${LAMBDA_TASK_ROOT}
 
 # upgrade pip version and install requirements
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir -r requirements_prod.txt
 
 # install lambda runtime interface client for python
 # documentation: https://docs.aws.amazon.com/lambda/latest/dg/python-image.html#python-image-instructions

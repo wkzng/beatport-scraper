@@ -1,0 +1,15 @@
+# FastMCP (recommended - simpler)
+fastmcp>=0.2.0
+
+# Standard MCP (alternative)
+# mcp>=1.0.0
+
+boto3
+requests
+python-dotenv
+beautifulsoup4==4.13.4
+lxml==5.4.0
+soupsieve==2.7
+typing_extensions==4.13.2
+urllib3==2.4.0
+
