@@ -54,3 +54,10 @@ functions:
       name: tools_beatport
       command:
         - src/handler.main
+    events:
+      - httpApi:
+          path: /beatport
+          method: POST
+      - httpApi:
+          path: /beatport
+          method: GET

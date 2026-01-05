@@ -97,28 +97,50 @@ def extract_audio_metadata(url: str) -> dict:
 
 
 def main(event:dict, context:dict):
-    if 'body' in event:
+    # Handle different input sources: POST body, GET query params, or direct invocation
+    if 'body' in event and event['body']:
+        # POST request with body
         body = json.loads(event['body']) if isinstance(event['body'], str) else event['body']
+    elif 'queryStringParameters' in event and event['queryStringParameters']:
+        # GET request with query parameters
+        body = event['queryStringParameters']
     else:
-        body = event 
-    
+        # Direct Lambda invocation
+        body = event
+
     print(body)
     url = body.get("url")
     print("URL", url)
 
 
     if not url:
-        return {
-            "status":ExecutionStatus.MISSING_URL, 
+        response = {
+            "status":ExecutionStatus.MISSING_URL,
             'message':f"Input event is missing a 'url' key"
         }
     elif not is_valid_beatport_url(url):
         print(url)
-        return {
-            "status":ExecutionStatus.INVALID_URL, 
+        response = {
+            "status":ExecutionStatus.INVALID_URL,
             'message':f"Input url is not a valid beatport url. For information, valid audio track typically starts with https://www.beatport.com/track/"
         }
-    return extract_audio_metadata(url)
+    else:
+        response = extract_audio_metadata(url)
+
+    # Return proper HTTP response for API Gateway
+    if 'requestContext' in event:
+        return {
+            'statusCode': 200 if response.get('status') == ExecutionStatus.SUCCESS else 400,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+                'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+            },
+            'body': json.dumps(response)
+        }
+
+    return response
 
 
 
